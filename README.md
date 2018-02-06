@@ -2,7 +2,7 @@
 Commonly with historical pricing data, there are missing periods or extra periods outside of trading hours. This script can be run to both 
 find missing trading periods; either enitre days or individual periods, and extra trading periods.
 
------------------Trading Period Error Checker v0.1-----------------------------
+-----------------Trading Period Error Checker v0.1-----------------------------<br>
                     Last updated 31st August 2017
 -------------------------------------------------------------------------------
 Script for checking trading periods for historical ohlc files. Currently 
@@ -10,7 +10,7 @@ assumes 5 minute tick data and that the first period is the correct starting
 time of the trading day. Can be used either from command line or jupyter 
 notebook. Checks for duplicated, missing and extra trading periods. Option to 
 create a cleaned.tsv file with duplicates removed. In doing so assumes the first
-occurrence (trading period) is correct (the desired first period for each subsequent da).
+occurrence (trading period) is correct (the desired first period for each subsequent day).
 
 From command line:
 $python error_checker.py [filename] [num of errors to return]
