@@ -11,6 +11,12 @@ notebook. Checks for duplicated, missing and extra trading periods. Option to
 create a cleaned.tsv file with duplicates removed. In doing so assumes the first
 occurrence (trading period) is correct (the desired first period for each subsequent day).
 
+## Inputs
+Historical pricing data in tsv format
+
+## Output
+Prints the errors
+
 ## Usage
 *From command line:*
 ```
