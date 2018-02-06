@@ -12,7 +12,7 @@ create a cleaned.tsv file with duplicates removed. In doing so assumes the first
 occurrence (trading period) is correct (the desired first period for each subsequent day).
 
 ## Inputs
-Historical pricing data in tsv format
+Historical pricing data in tsv format. Should have the following columns -Time, Open, High, Low, Close, Volumne
 
 ## Output
 Prints the errors
