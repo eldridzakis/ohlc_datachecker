@@ -4,10 +4,10 @@ Created on Sat Jul 22 13:11:30 2017
 -----------------Trading Period Error Checker v0.1-----------------------------
                     Last updated 31st August 2017
 -------------------------------------------------------------------------------
-Script for checking trading periods for historical ohlc files. Currently 
-assumes 5 minute tick data and that the first period is the correct starting 
-time of the trading day. Can be used either from command line or jupyter 
-notebook. Checks for duplicated, missing and extra trading periods. Option to 
+Script for checking trading periods for historical ohlc files. Currently
+assumes 5 minute tick data and that the first period is the correct starting
+time of the trading day. Can be used either from command line or jupyter
+notebook. Checks for duplicated, missing and extra trading periods. Option to
 create a cleaned.tsv file with duplicates removed. In doing so assumes the first
 occurrence is correct.
 
@@ -15,12 +15,12 @@ From command line:
 $python error_checker.py [filename] [num of errors to return]
 Where filename is either full path or subdirectory/filename.extension
 
-In jupyter: 
+In jupyter:
 from error_checker import trading_periods
 trading_periods(file_path='[filename]')
 
-Features for next realease : Estimate the first period of the day instead of 
-assuming first period is correct. 
+Features for next realease : Estimate the first period of the day instead of
+assuming first period is correct.
 -------------------------------------------------------------------------------
 """
 import sys
@@ -41,25 +41,25 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
     t0 = datetime.datetime.now()
     #--------- Load Data File ------------
     col_names = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
-    
+
     # GNF_df is used to store the historic data
     GNF_df = pd.read_table(file_path, index_col=0, names=col_names)
     GNF_df.index = pd.to_datetime(GNF_df.index)
     print('File Path\t:', file_path)
     start_date = GNF_df.index[0] # First date
     end_date = GNF_df.index[-1]  # Last date
-    
+
     print('Trading Periods\t:',start_date,'-',end_date)
     start_time = GNF_df.index[0].time() # Set the expected first period
-    
+
     #---- Make a custom index----
     index = pd.date_range(start_date, end_date, freq='B')#.map(times)
 
     #-------- Holidays-----------
     cal1 = tradingCal()    # new instance of class
     holidays = cal1.holidays(start_date, end_date)
-    
-    # When New Years day is on a Saturday NYE is not a holiday for NYSE 
+
+    # When New Years day is on a Saturday NYE is not a holiday for NYSE
     nye = holidays[(holidays.month == 12) & (holidays.day == 31)]
     holidays = holidays.drop(nye)
 
@@ -70,7 +70,7 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
     # July 4th
     half_days = half_days.append((holidays[(holidays.month == 7) & (
         holidays.day == 4)] - datetime.timedelta(days=1)))
-    
+
     # Christmas Eve
     xmas_eve=[]
     for year in pd.unique(holidays.year):
@@ -95,7 +95,7 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
     extra_periods = GNF_df.index.difference(index)
     first_period = []
     last_period = []
-    
+
     for period in missing_periods:
         if period.time() == start_time:
             first_period.append(period.date())
@@ -103,7 +103,7 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
             last_period.append(period.date())
 
     missing = [x for x in first_period if x in last_period]
-    
+
     if not GNF_df.index.is_unique:
         print('\nDuplicate periods', len(GNF_df[GNF_df.index.duplicated()]))
         first = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[0]
@@ -115,11 +115,11 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
     print('\nMissing Days')
     for date in missing:
         print(date)
-        
+
     # Remove missing days
     first_period = [x for x in first_period if x not in missing]
     last_period = [x for x in last_period if x not in missing]
-    
+
     #Incorrect Trading Hours
     print('\nIncorrect Trading Hours')
     for period in first_period[:num]:
@@ -133,7 +133,7 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
     if len(last_period) > num:
         print('First',str(num),'of',str(len(last_period)))
     extra_days = pd.unique(extra_periods.date)
-    
+
     # Extra periods
     print('\nExtra periods')
     for day in extra_days[:num]:
@@ -142,7 +142,7 @@ def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
         print(day, 'Begin',first_time, 'End', last_time)
     if len(extra_days) > num:
         print('First',str(num),'of',str(len(extra_days)))
-    print('\nTime elasped ',datetime.datetime.now()-t0)    
+    print('\nTime elasped ',datetime.datetime.now()-t0)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
