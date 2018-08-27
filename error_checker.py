@@ -29,6 +29,7 @@ import numpy as np
 from pandas.tseries.holiday import (get_calendar, HolidayCalendarFactory,
                                     GoodFriday)
 import datetime
+import pathlib
 
 print(datetime.datetime.now())
 cal = get_calendar('USFederalHolidayCalendar')  # Create calendar instance
@@ -37,7 +38,8 @@ cal.rules.pop(6)                                # Remove Columbus Day rule
 tradingCal = HolidayCalendarFactory('TradingCalendar', cal, GoodFriday)
 
 # Set clean_dup(licates) to True to produce a cleaned file
-def trading_periods(clean_dup=False, file_path='Data\\VXX_5MIN.tsv', num=5):
+def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
+                                               'VXX_5MIN.tsv'), num=5):
     t0 = datetime.datetime.now()
     #--------- Load Data File ------------
     col_names = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
@@ -151,3 +153,5 @@ if __name__ == '__main__':
         trading_periods(file_path=sys.argv[1])
     elif len(sys.argv) == 3:
         trading_periods(file_path=sys.argv[1],num=int(sys.argv[2]))
+    else:
+        print('Script takes no more than two args: data_file_path num_errors_to_print')
