@@ -53,15 +53,88 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
 
     print('Trading Periods\t:',start_date,'-',end_date)
     start_time = GNF_df.index[0].time() # Set the expected first period
+    index = get_custom_index(start_date, end_date, '5min')
+    end_time = index[-1].time()
 
-    #---- Make a custom index----
+    #--- Capture both missing and extra data ponts---
+    missing_periods = index.difference(GNF_df.index)
+    extra_periods = GNF_df.index.difference(index)
+    first_period = []
+    last_period = []
+
+    # search through missing_periods to find missing days
+    # assumes if missing first and last period it is a missing day
+    # contains a the pd.DateTime of the starting period
+    for period in missing_periods:
+        if period.time() == start_time:
+            first_period.append(period.date())
+        # should end_time be either ending time for missing half days?
+        elif period.time() == end_time:
+            last_period.append(period.date())
+
+    missing_days = [x for x in first_period if x in last_period]
+
+    # find duplicates timestamps; write to file if clean_dup
+    if not GNF_df.index.is_unique:
+        print('\nDuplicate periods', len(GNF_df[GNF_df.index.duplicated()]))
+        first = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[0]
+        last = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[-1]
+        print('Start\t',first,'\nEnd\t',last)
+        if clean_dup:
+            GNF_df[~GNF_df.index.duplicated()].to_csv('cleaned.tsv',sep='\t',
+                                                  header=False)
+    print('\nMissing Days')
+    for date in missing_days:
+        print(date)
+
+    # Remove missing days from first_period and last_period
+    first_period = [x for x in first_period if x not in missing_days]
+    last_period = [x for x in last_period if x not in missing_days]
+
+    # Incorrect Trading Hours
+    print('\nIncorrect Trading Hours')
+    for period in first_period[:num]:
+        start = GNF_df[period.strftime("%Y-%m-%d")].index[0]
+        print('Start ',start)
+    if len(first_period) > num:
+        print('First',str(num),'of',str(len(first_period)))
+    for period in last_period[:num]:
+        end = GNF_df[period.strftime("%Y-%m-%d")].index[-1]
+        print('End ',end)
+    if len(last_period) > num:
+        print('First',str(num),'of',str(len(last_period)))
+
+    # Extra periods
+    days_with_extra_periods = pd.unique(extra_periods.date)
+    print('\nExtra periods')
+    for day in days_with_extra_periods[:num]:
+        first_time = extra_periods[extra_periods.date == day][0].time()
+        last_time = extra_periods[extra_periods.date == day][-1].time()
+        print(day, 'Begin',first_time, 'End', last_time)
+    if len(days_with_extra_periods) > num:
+        print('First',str(num),'of',str(len(days_with_extra_periods)))
+    print('\nTime elasped ',datetime.datetime.now()-t0)
+
+def get_custom_index(start_date, end_date, frequency):
+    """
+    Makes a custom index of pandas timestamps based on the trading hours of
+    the NYSE
+
+    start_date: pd.Timestamp object on which to start the index
+    end_date: pd.Timestamp object on which to end the index
+    frequency: a pandas frequency str (e.g., '5min') that should be evenly divisible
+          by 390min (full day) and 210min (half day)
+    """
     index = pd.date_range(start_date, end_date, freq='B')#.map(times)
+    # start_time= pd.Timestamp(start_date.year, start_date.month, start_date.day, 9, 30)
+    start_time = start_date.time()
 
     #-------- Holidays-----------
     cal1 = tradingCal()    # new instance of class
     holidays = cal1.holidays(start_date, end_date)
 
     # When New Years day is on a Saturday NYE is not a holiday for NYSE
+    # Is this condition already checked?
     nye = holidays[(holidays.month == 12) & (holidays.day == 31)]
     holidays = holidays.drop(nye)
 
@@ -90,61 +163,7 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
             datetimes.append(pd.date_range(date.strftime("%Y-%m-%d")+' '+
                                 str(start_time), periods=78, freq='5min'))
     index = pd.to_datetime(np.concatenate(datetimes))
-    end_time = index[-1].time()
-
-    #--- Capture both missing and extra data ponts---
-    missing_periods = index.difference(GNF_df.index)
-    extra_periods = GNF_df.index.difference(index)
-    first_period = []
-    last_period = []
-
-    for period in missing_periods:
-        if period.time() == start_time:
-            first_period.append(period.date())
-        elif period.time() == end_time:
-            last_period.append(period.date())
-
-    missing = [x for x in first_period if x in last_period]
-
-    if not GNF_df.index.is_unique:
-        print('\nDuplicate periods', len(GNF_df[GNF_df.index.duplicated()]))
-        first = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[0]
-        last = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[-1]
-        print('Start\t',first,'\nEnd\t',last)
-        if clean_dup:
-            GNF_df[~GNF_df.index.duplicated()].to_csv('cleaned.tsv',sep='\t',
-                                                  header=False)
-    print('\nMissing Days')
-    for date in missing:
-        print(date)
-
-    # Remove missing days
-    first_period = [x for x in first_period if x not in missing]
-    last_period = [x for x in last_period if x not in missing]
-
-    #Incorrect Trading Hours
-    print('\nIncorrect Trading Hours')
-    for period in first_period[:num]:
-        start = GNF_df[period.strftime("%Y-%m-%d")].index[0]
-        print('Start ',start)
-    if len(first_period) > num:
-        print('First',str(num),'of',str(len(first_period)))
-    for period in last_period[:num]:
-        end = GNF_df[period.strftime("%Y-%m-%d")].index[-1]
-        print('End ',end)
-    if len(last_period) > num:
-        print('First',str(num),'of',str(len(last_period)))
-    extra_days = pd.unique(extra_periods.date)
-
-    # Extra periods
-    print('\nExtra periods')
-    for day in extra_days[:num]:
-        first_time = extra_periods[extra_periods.date == day][0].time()
-        last_time = extra_periods[extra_periods.date == day][-1].time()
-        print(day, 'Begin',first_time, 'End', last_time)
-    if len(extra_days) > num:
-        print('First',str(num),'of',str(len(extra_days)))
-    print('\nTime elasped ',datetime.datetime.now()-t0)
+    return index
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
