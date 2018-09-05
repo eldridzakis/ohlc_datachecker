@@ -47,18 +47,18 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
     # GNF_df is used to store the historic data
     GNF_df = pd.read_table(file_path, index_col=0, names=col_names)
     GNF_df.index = pd.to_datetime(GNF_df.index)
-    print('File Path\t:', file_path)
+    print('File Path\t: %s' % file_path)
     start_date = GNF_df.index[0] # First date
     end_date = GNF_df.index[-1]  # Last date
 
-    print('Trading Periods\t:',start_date,'-',end_date)
+    print('Trading Periods\t: %s - %s' % (start_date, end_date))
     start_time = GNF_df.index[0].time() # Set the expected first period
-    index = get_custom_index(start_date, end_date, '5min')
-    end_time = index[-1].time()
+    custom_index = get_custom_index(start_date, end_date, '5min')
+    end_time = custom_index[-1].time()
 
     #--- Capture both missing and extra data ponts---
-    missing_periods = index.difference(GNF_df.index)
-    extra_periods = GNF_df.index.difference(index)
+    missing_periods = custom_index.difference(GNF_df.index)
+    extra_periods = GNF_df.index.difference(custom_index)
     first_period = []
     last_period = []
 
@@ -76,12 +76,12 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
 
     # find duplicates timestamps; write to file if clean_dup
     if not GNF_df.index.is_unique:
-        print('\nDuplicate periods', len(GNF_df[GNF_df.index.duplicated()]))
+        print('\nDuplicate periods %s' % len(GNF_df[GNF_df.index.duplicated()]))
         first = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[0]
         last = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[-1]
-        print('Start\t',first,'\nEnd\t',last)
+        print('Start\t %s \nEnd\t %' % (first, last))
         if clean_dup:
-            GNF_df[~GNF_df.index.duplicated()].to_csv('cleaned.tsv',sep='\t',
+            GNF_df[~GNF_df.index.duplicated()].to_csv('cleaned.tsv', sep='\t',
                                                   header=False)
     print('\nMissing Days')
     for date in missing_days:
@@ -95,14 +95,14 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
     print('\nIncorrect Trading Hours')
     for period in first_period[:num]:
         start = GNF_df[period.strftime("%Y-%m-%d")].index[0]
-        print('Start ',start)
+        print('Start %s' % start)
     if len(first_period) > num:
-        print('First',str(num),'of',str(len(first_period)))
+        print('First %s of %s' % (num, len(first_period)))
     for period in last_period[:num]:
         end = GNF_df[period.strftime("%Y-%m-%d")].index[-1]
-        print('End ',end)
+        print('End %s' % end)
     if len(last_period) > num:
-        print('First',str(num),'of',str(len(last_period)))
+        print('First %s of %s' % (num, last_period))
 
     # Extra periods
     days_with_extra_periods = pd.unique(extra_periods.date)
@@ -110,10 +110,10 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
     for day in days_with_extra_periods[:num]:
         first_time = extra_periods[extra_periods.date == day][0].time()
         last_time = extra_periods[extra_periods.date == day][-1].time()
-        print(day, 'Begin',first_time, 'End', last_time)
+        print('%s Begin %s End %s' % (day, first_time, last_time))
     if len(days_with_extra_periods) > num:
-        print('First',str(num),'of',str(len(days_with_extra_periods)))
-    print('\nTime elasped ',datetime.datetime.now()-t0)
+        print('First %s of %s' % (num, len(days_with_extra_periods)))
+    print('\nTime elasped %s' % (datetime.datetime.now() - t0))
 
 def get_custom_index(start_date, end_date, frequency):
     """
@@ -125,7 +125,7 @@ def get_custom_index(start_date, end_date, frequency):
     frequency: a pandas frequency str (e.g., '5min') that should be evenly divisible
           by 390min (full day) and 210min (half day)
     """
-    index = pd.date_range(start_date, end_date, freq='B')#.map(times)
+    custom_index = pd.date_range(start_date, end_date, freq='B')#.map(times)
     # start_time= pd.Timestamp(start_date.year, start_date.month, start_date.day, 9, 30)
     start_time = start_date.time()
 
@@ -149,11 +149,11 @@ def get_custom_index(start_date, end_date, frequency):
     # Christmas Eve
     xmas_eve=[]
     for year in pd.unique(holidays.year):
-        xmas_eve.append(datetime.date(year,12,24))
+        xmas_eve.append(datetime.date(year, 12, 24))
     half_days = half_days.append(pd.DatetimeIndex(xmas_eve)).sort_values()
     #-------------------------
     datetimes = []
-    for date in index:
+    for date in custom_index:
         if date.date() in holidays:
             continue
         elif date.date() in half_days:
@@ -162,8 +162,8 @@ def get_custom_index(start_date, end_date, frequency):
         else:
             datetimes.append(pd.date_range(date.strftime("%Y-%m-%d")+' '+
                                 str(start_time), periods=78, freq='5min'))
-    index = pd.to_datetime(np.concatenate(datetimes))
-    return index
+    custom_index = pd.to_datetime(np.concatenate(datetimes))
+    return custom_index
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
@@ -171,6 +171,6 @@ if __name__ == '__main__':
     elif len(sys.argv) == 2:
         trading_periods(file_path=sys.argv[1])
     elif len(sys.argv) == 3:
-        trading_periods(file_path=sys.argv[1],num=int(sys.argv[2]))
+        trading_periods(file_path=sys.argv[1], num=int(sys.argv[2]))
     else:
         print('Script takes no more than two args: data_file_path num_errors_to_print')
