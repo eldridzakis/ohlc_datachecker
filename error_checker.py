@@ -39,7 +39,7 @@ tradingCal = HolidayCalendarFactory('TradingCalendar', cal, GoodFriday)
 
 # Set clean_dup(licates) to True to produce a cleaned file
 def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
-                                               'VXX_5MIN.tsv'), num=5):
+                    'VXX_5MIN.tsv'), num=5, frequency='5min'):
     t0 = datetime.datetime.now()
     #--------- Load Data File ------------
     col_names = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
@@ -53,7 +53,7 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
 
     print('Trading Periods\t: %s - %s' % (start_date, end_date))
     start_time = GNF_df.index[0].time() # Set the expected first period
-    custom_index = get_custom_index(start_date, end_date, '5min')
+    custom_index = get_custom_index(start_date, end_date, frequency)
     end_time = custom_index[-1].time()
 
     #--- Capture both missing and extra data ponts---
@@ -77,9 +77,10 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
     # find duplicates timestamps; write to file if clean_dup
     if not GNF_df.index.is_unique:
         print('\nDuplicate periods %s' % len(GNF_df[GNF_df.index.duplicated()]))
+        # can remove the pd.unique
         first = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[0]
         last = pd.unique(GNF_df.index[GNF_df.index.duplicated()].date)[-1]
-        print('Start\t %s \nEnd\t %' % (first, last))
+        print('Start\t %s \nEnd\t %s' % (first, last))
         if clean_dup:
             GNF_df[~GNF_df.index.duplicated()].to_csv('cleaned.tsv', sep='\t',
                                                   header=False)
@@ -117,14 +118,32 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
 
 def get_custom_index(start_date, end_date, frequency):
     """
-    Makes a custom index of pandas timestamps based on the trading hours of
-    the NYSE
+    Makes a custom index of pandas timestamps based on the trading hours
+    of the NYSE
 
     start_date: pd.Timestamp object on which to start the index
     end_date: pd.Timestamp object on which to end the index
-    frequency: a pandas frequency str (e.g., '5min') that should be evenly divisible
-          by 390min (full day) and 210min (half day)
+    frequency: a pandas frequency str (e.g., '5min') that should be
+    evenly divisible by 390min (full day) and 210min (half day)
     """
+
+    # check frequency string meets parameter specifications
+    try:
+        offset = pd.tseries.frequencies.to_offset(frequency)
+        offset.delta
+    except ValueError:
+        raise ValueError('"{0}" is not a valid pandas frequency str'.format(frequency))
+    except AttributeError:
+        raise ValueError('"{0}" must be be convertable to a Timedelta'.format(frequency))
+
+    full_trading_day = pd.Timedelta('390min')
+    half_trading_day = pd.Timedelta('210min')
+
+    if not (full_trading_day / offset.delta).is_integer():
+        raise ValueError('"{0}" is not divisible by 390min'.format(frequency))
+    if not (half_trading_day / offset.delta).is_integer():
+        raise ValueError('"{0}" is not divisible by 210min'.format(frequency))
+
     custom_index = pd.date_range(start_date, end_date, freq='B')#.map(times)
     # start_time= pd.Timestamp(start_date.year, start_date.month, start_date.day, 9, 30)
     start_time = start_date.time()
@@ -153,15 +172,19 @@ def get_custom_index(start_date, end_date, frequency):
     half_days = half_days.append(pd.DatetimeIndex(xmas_eve)).sort_values()
     #-------------------------
     datetimes = []
+    num_half_day_periods = int(half_trading_day / frequency)
+    num_full_day_periods = int(full_trading_day / frequency)
     for date in custom_index:
         if date.date() in holidays:
             continue
         elif date.date() in half_days:
-            datetimes.append(pd.date_range(date.strftime("%Y-%m-%d")+' '+
-                                str(start_time), periods=42, freq='5min'))
+            datetimes.append(pd.date_range(date.strftime("%Y-%m-%d") + ' ' +
+                                str(start_time), periods=num_half_day_periods,
+                                freq=frequency))
         else:
-            datetimes.append(pd.date_range(date.strftime("%Y-%m-%d")+' '+
-                                str(start_time), periods=78, freq='5min'))
+            datetimes.append(pd.date_range(date.strftime("%Y-%m-%d") + ' ' +
+                                str(start_time), periods=num_full_day_periods,
+                                freq=frequency))
     custom_index = pd.to_datetime(np.concatenate(datetimes))
     return custom_index
 
