@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jul 22 13:11:30 2017
------------------Trading Period Error Checker v0.1-----------------------------
+-----------------Trading Period Error Checker v0.2-----------------------------
                     Last updated 9th September 2018
 -------------------------------------------------------------------------------
 Script for checking trading periods for historical ohlc files. Currently
