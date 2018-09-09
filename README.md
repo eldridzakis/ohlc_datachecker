@@ -2,7 +2,7 @@
 Commonly with historical pricing data, there are missing periods or extra periods outside of trading hours. This script can be run to both 
 find missing trading periods; either enitre days or individual periods, and extra trading periods.
 
-## -----------------Trading Period Error Checker v0.1-----------------------------<br>
+## -----------------Trading Period Error Checker v0.2-----------------------------<br>
 *Last updated 9th September 2018* <br>
 Script for checking trading periods for historical ohlc files. Currently 
 assumes 5 minute tick data and that the first period is the correct starting 
