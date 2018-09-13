@@ -103,7 +103,7 @@ def trading_periods(clean_dup=False, file_path=pathlib.Path('Data',
         end = GNF_df[period.strftime("%Y-%m-%d")].index[-1]
         print('End %s' % end)
     if len(last_period) > num:
-        print('First %s of %s' % (num, last_period))
+        print('First %s of %s' % (num, len(last_period)))
 
     # Extra periods
     days_with_extra_periods = pd.unique(extra_periods.date)
