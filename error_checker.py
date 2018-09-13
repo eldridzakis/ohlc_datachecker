@@ -2,7 +2,7 @@
 """
 Created on Sat Jul 22 13:11:30 2017
 -----------------Trading Period Error Checker v0.2-----------------------------
-                    Last updated 9th September 2018
+                    Last updated 11th September 2018
 -------------------------------------------------------------------------------
 Script for checking trading periods for historical ohlc files. Currently
 assumes 5 minute tick data and that the first period is the correct starting
